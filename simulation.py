@@ -238,7 +238,7 @@ Y,X,group_true, err = gen_var(n,p,rho,prop,e)
 sig_p, time, resi_sig = par_scr(X,Y,m1 = 5, m2 = 5,core = 3)
 X_sig = X[sig_p,:]
 group_k2, beta_k, evalu_k, ttt_k, group_rep_k = rep_kmeans2(X_sig, Y, k, rep_time = 5)
-group_swk, group_init, center, beta_final, weights = swkmeans(X.T, Y, k, lamb=0.1, group_init = group_k2)
+group_swk, group_init, center, beta_final, weights = swkmeans(X, Y, k, lamb=0.1, group_init = group_k2)
 weight_up, beta_up, group_up = justify(X,Y,weights,group_swk,beta_final)
 
 
