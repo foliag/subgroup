@@ -247,18 +247,3 @@ ari = adjusted_rand_score(group_true, group_up)         # for s4-s5
 l1loss = l1_loss(group_true,weight_overlap,weight_up)   # for s1-s3
 rmse = rmse_multi_soft(beta, beta_up, weight_up,n)
 
-#
-plt.plot(weight_true[0,:])
-plt.plot(weights[0,:])
-
-sns.heatmap(weights.T, cmap="YlGnBu_r")
-
-n = len(group_true)
-weight_true = np.zeros((2,n))
-weight_true[0,group_true == 1] = 1
-weight_true[1,group_true == 2] = 1
-weight_true[0:,group_true == 3] = weight_overlap
-weight_true[1:,group_true == 3] = 1 - weight_overlap
-
-U_true_mat = weight_true.T.copy()
-X = X.T.copy()
