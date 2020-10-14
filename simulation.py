@@ -9,7 +9,7 @@ Created on Tue Aug 25 10:04:50 2020
 
 
 def gen_beta(p,a):
-    q = a.shape[1]        # 显著变量个数
+    q = a.shape[1]        # number of significant variables
     beta = np.zeros((p,k))
     beta[0:q,:] = a.T
     return beta
@@ -38,7 +38,7 @@ def gen_var(n,p,rho,prop,e):
 
 
 def gen_beta_s3(p,a,npro,k):
-    q = a.shape[1]        # 显著变量个数
+    q = a.shape[1]        
     weight_overlap = np.random.uniform(size = npro)
     beta = np.zeros((p,k+npro))
     a1 = a.copy()
@@ -205,7 +205,7 @@ weight_overlap = np.hstack((np.ones(int(prop[-2]*n))*0.5,np.ones(int(prop[-1]*n)
 
 #s3
 k=2
-a = np.array([[1,2,3,0,0,0],[0,0,0,-4,-5,-6]])   #基本系数值
+a = np.array([[1,2,3,0,0,0],[0,0,0,-4,-5,-6]])   #basic coefficients
 prop = np.array((0.4,0.4,0.2)) 
 npro = int(n*prop[-1])
 
