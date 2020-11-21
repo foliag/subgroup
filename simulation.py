@@ -176,7 +176,7 @@ def l1_loss(group_true,weight_overlap,weight):
 
 
 import sys
-sys.path.append(r'/Users/luna/lunas/phd/3/github/')
+sys.path.append(r'your_pathway')
 import src
 
 
