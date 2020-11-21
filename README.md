@@ -36,7 +36,8 @@ weight_overlap = np.ones(int(prop[-1]*n))*0.5
 * Implement algorithm through three steps 
 ```
 ##initial estimate
-sig_p, time, resi_sig = par_scr(X,Y,m1 = 5, m2 = 5,core = 3)
+core = multiprocessing.cpu_count()
+sig_p, time, resi_sig = par_scr(X,Y,m1 = 5, m2 = 5,core = core)
 X_sig = X[sig_p,:]
 group_k2, beta_k, evalu_k, ttt_k, group_rep_k = rep_kmeans2(X_sig, Y, k, rep_time = 5)
 
