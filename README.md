@@ -14,12 +14,13 @@ The algorithm starts from an initial estimate of U, and then updates A and U seq
 
 # Contents
 * `src.py`: main function to run our algorithm, see demo below.
-* `simulation.py`: code for simulated data generation and results evaluation.
+* `utils.py`: code for simulated data generation and results evaluation.
 
 # Demo
 * Generate simulated data under `s1` setting
 ```
 import src
+import utils
 
 p=1000
 n = 200
