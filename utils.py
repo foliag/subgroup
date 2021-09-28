@@ -8,7 +8,7 @@
 
 
 
-def gen_beta(p,a):
+def gen_beta_nonoverlap(p,a):
     q = a.shape[1]        # number of significant variables
     beta = np.zeros((p,k))
     beta[0:q,:] = a.T
@@ -16,7 +16,7 @@ def gen_beta(p,a):
 
 
 
-def gen_var(n,p,rho,prop,e):
+def gen_var_nonoverlap(n,p,rho,prop,e):
     sigma = np.zeros(p*p).reshape(p,p)
     for i in range(p):
         for j in range(p):
@@ -37,7 +37,7 @@ def gen_var(n,p,rho,prop,e):
 
 
 
-def gen_beta_s3(p,a,npro,k):
+def gen_beta_overlap(p,a,npro,k):
     q = a.shape[1]        
     weight_overlap = np.random.uniform(size = npro)
     beta = np.zeros((p,k+npro))
@@ -49,7 +49,7 @@ def gen_beta_s3(p,a,npro,k):
     return beta,weight_overlap
 
 
-def gen_var_s3(n,p,rho,prop,k,e):
+def gen_var_overlap(n,p,rho,prop,k,e):
     sigma = np.zeros(p*p).reshape(p,p)
     for i in range(p):
         for j in range(p):

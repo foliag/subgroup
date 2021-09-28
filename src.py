@@ -7,17 +7,14 @@ Created on Mon Aug 24 17:10:22 2020
 """
 
 
-import os
 import numpy as np
 import pandas as pd
 import math
-import matplotlib.pyplot as plt
 from sklearn.linear_model import LassoCV, Lasso
 from sklearn.metrics import adjusted_rand_score,confusion_matrix, recall_score
 import heapq
 import warnings
 import datetime
-import seaborn as sns
 import multiprocessing
 from scipy import sparse
 
@@ -100,124 +97,10 @@ def kmeans(X,Y,k,group_init = None):
         X_tmp = X[:,group_update == group_set[i]]
         Y_tmp = Y[group_update == group_set[i]]
         beta_final[:,i] = SparseLasso(X_tmp.T,Y_tmp)
-    print("k-means finished, iteration: " + str(ite))    
+    #print("k-means finished, iteration: " + str(ite))    
     return group_update, group_init, beta_final
 
 
-
-
-def wcoef_means(X,Y,k,lamb,m=2,group_init = None):
-    m_features, N = X.shape
-    ite = 0
-    f_old = 1e5
-    M = np.zeros((N,N*k))
-    for i in range(N):
-        M[i,k*i:k*(i+1)] = 1     
-    dist = np.zeros((k, N))
-    beta_t = np.zeros((m_features,k))
-    Ekn = np.ones(k*N)
-    
-    
-    B = sparse.diags([-1, 1], [0, 1], (k-1, k), dtype=int).A.T
-    A0 = sparse.diags([1, 2, 1], [-1, 0, 1], (N, N), dtype=int).A
-    A = np.stack([np.zeros_like(B), np.zeros_like(B), B])[A0].swapaxes(1, 2).reshape(k*N, -1).T
-
-
-#   initialization
-    if group_init is None:   
-        group_init = np.random.randint(1, k+1,size = N)
-    group_set = np.unique(group_init)
-
-    for i in range(k):            
-        X_tmp = X[:,group_init == group_set[i]]
-        Y_tmp = Y[group_init == group_set[i]]
-        reg_tmp = LassoCV(cv=3, max_iter=10000).fit(X_tmp.T,Y_tmp)
-        beta_tmp = reg_tmp.coef_
-        dist[i,:] = (Y - beta_tmp.dot(X))**2   
-    D = np.diag(dist.T.reshape(-1))
-    est_er = 1/dist
-    u_t = (est_er/sum(est_er)).T.reshape(-1,1)[:,0]
-        
-
-    while True:
-        ite += 1
-        print("*********current ite: " + str(ite))
-        ########update beta
-        u_mat = u_t.reshape(N,k)
-        for l in range(k):
-            w = np.sqrt(u_mat[:,l])
-            Yw = w*Y
-            Xw = w*X
-            if ite > np.log(np.sqrt(m_features))/np.log(1.06)*1.5:
-                beta_t[:,l] = LassoCV(cv=5, max_iter=5000,n_alphas = 30).fit(Xw.T,Yw).coef_
-            else:
-                beta_t[:,l] = LassoCV(cv=5, max_iter=5000,alphas = [0.01]).fit(Xw.T,Yw).coef_
-            # beta_t[:,l] = LassoCV(cv=5, max_iter=5000,n_alphas = 30).fit(Xw.T,Yw).coef_
-        print("beta done")
-
-        
-        ######update u
-        r = 1; gap = 1
-        u_old = u_t.copy()
-        u_older = u_old.copy()
-        u_mat = u_older.reshape(N,k)   # u: shape = N*k
-        wbeta = u_mat.dot(beta_t.T)       #wbeata: shape = N*p
-        #        f_old = norm2(Y - sum((wbeta.T*X)))**2/2 
-        while True:
-            #######backtracking t
-            while True:
-                t = 0.8
-                while True:
-                    ####cal omega
-                    #cal f(u(t-1))
-                    u_mat = u_old.reshape(N,k).copy()   # u: shape = N*k
-                    wbeta = u_mat.dot(beta_t.T)       #wbeata: shape = N*p
-                    f_u0 = norm2(Y - sum((wbeta.T*X)))**2/2   
-                    # cal h(u(t-1))
-                    h_u0 = r*f_u0 - sum(np.log(1-u_old))
-                    #cal grad_h(u(t-1))
-                    grad_hu0 = r*m*(u_old**(m-1)).dot(D).dot(Ekn) + 2*r*lamb*A.T.dot(A).dot(u_old) - 1/u_old
-                    #cal grad_2h(u(t-1))
-                    grad_2hu0 = np.diag(r*m*D.dot(Ekn)) + 2*r*lamb*A.T.dot(A)+np.diag(u_old**(-2))
-                    #cal omega
-                    w = np.linalg.inv(M.dot(np.linalg.inv(grad_2hu0)).dot(M.T)).dot(-M.dot(np.linalg.inv(grad_2hu0)).dot(grad_hu0))
-                    #### cal delta_u
-                    delta_u = -np.linalg.inv(grad_2hu0).dot(grad_hu0+M.T.dot(w))
-                    u_t = u_old + t * delta_u
-                    u_mat = u_t.reshape(N,k).copy()   # u: shape = N*k
-                    # u_mat[u_mat<0] = 0.01
-                    # u_t = u_mat.reshape(-1,1)[:,0]
-                    # cal f(u(t))
-                    wbeta = u_mat.dot(beta_t.T)       #wbeata: shape = N*k
-                    f_u = norm2(Y - sum((wbeta.T*X)))**2/2 
-                    # cal h(u(t))
-                    h_u = r*f_u - sum(np.log(1-u_t))
-        
-                    if h_u <= h_u0 + grad_hu0.dot(u_t-u_old) + (u_t-u_old).T.dot(grad_2hu0).dot(u_t-u_old):
-                        break
-                    t *= 0.8
-                    #print("t:"+str(t))
-                if max(u_t - u_old) < 0.001:
-                    break
-                u_old = u_t.copy()   
-            gap = max(u_t-u_older)
-            #print("u gap: " + str(gap))
-            if gap < 1e-3:
-                break
-            u_older = u_t.copy()
-            r = 10*r        
-
-        u_mat = u_t.reshape(N,k)   # u: shape = N*k
-        wbeta = u_mat.dot(beta_t.T)       #wbeata: shape = N*k
-        f_u_update = norm2(Y - sum((wbeta.T*X)))**2/2
-
-        print("$$$$f_gap: " + str(f_old-f_u_update))
-        if ite > 25:            
-            if abs(f_u_update - f_old) < 1e-2 or ite > 50:
-                break
-        f_old = f_u_update.copy()
-
-    return u_t, beta_t
 
 
 
@@ -255,7 +138,7 @@ def swkmeans(X, Y, k, lamb, group_init = None):
     D = np.diag(dist.T.reshape(-1))
 
 ## update begins
-    while (obj_old - obj_new)  > 1e-5 or ite<100:
+    while (obj_old - obj_new)  > 1e-5 or ite<20:
         ite += 1
 
         ## update weight       
@@ -286,7 +169,7 @@ def swkmeans(X, Y, k, lamb, group_init = None):
         obj_old = obj_new
         obj_new = (dist*weights**2).sum()
 #        print("obj_old: " + str(obj_old) + "; obj_curr: " + str(obj))
-        print("gap"+str(obj_old-obj_new))
+        #print("gap"+str(obj_old-obj_new))
 
     group = np.zeros(N_points)            
     for point in range(N_points):
@@ -308,21 +191,14 @@ def swkmeans(X, Y, k, lamb, group_init = None):
 
 
 def rep_swkmeans(X, Y, k = 2, lamb = 0.1, rep_time = 10):
-    trmse = []
     tresi = []
-    tfp = []
-    ttp = []
     tbic = []
-    tari = []
-#    tl1 = []
     bic_bst = 10000
     n = X.shape[1]
     starttime = datetime.datetime.now()
 
     for t in range(rep_time):
-        print("+++++++++current iteration: " + str(t) + "+++++++++")
-        group_p1, group_init, center, beta_final, weight = swkmeans(X, Y, k, lamb, beta_init = beta0, group_init = None)
-        ari = adjusted_rand_score(group_true, group_p1) 
+        group_p1, group_init, center, beta_final, weight = swkmeans(X, Y, k, lamb, group_init = None)
 
         group_set = np.unique(group_p1)
         resi2 = np.zeros(n)
@@ -331,56 +207,132 @@ def rep_swkmeans(X, Y, k = 2, lamb = 0.1, rep_time = 10):
             Y_tmp = Y[group_p1 == group_set[l]]
             resi2[group_p1==group_set[l]] = (Y_tmp - beta_final[:,l].dot(X_tmp))**2           
         resi_update = resi2.sum()
-        bic_update = criteria_bic(resi_update, beta_final)
-        fp,tp = confu(q,beta_final)
-        rmse_update = rmse_multi(beta, beta_final, group_p1)
-#        l1 = l1_loss(group_true, weight)
-
-        print("current ari: " + str(ari))
-        print("current bic: " + str(bic_update))
-        print("current resi: " + str(resi_update))
-        print("current fp: " + str(fp))
-        print("current tp: " + str(tp))
-        print("current rmse: " + str(rmse_update))
-        tari.append(ari)
-        trmse.append(rmse_update)
-        ttp.append(tp)
-        tfp.append(fp)
+        bic_update = criteria_bic(resi_update, beta_final,n)
         tresi.append(resi_update)
         tbic.append(bic_update)
-#        tl1.append(l1)
-         
+
     
     #    if resi_update < resi_bst:
         if bic_update < bic_bst:
             group_bst = group_p1.copy()
             beta_bst = beta_final.copy()
-            ari_bst = ari
             rpe_bst = np.sqrt(resi_update/n)
             bic_bst = bic_update
-            fp_bst = fp
-            tp_bst = tp
-            rmse_bst = rmse_update
             weight_bst =  weight
             center_bst = center.copy()
-#            l1_bst = l1
-            print("********** best ari: " + str(ari_bst) + "*********")
-            print("********** best bic: " + str(bic_bst) + "*********")
-            print("********** best resi: " + str(rpe_bst) + "*********")        
-            print("********** best fp: " + str(fp_bst) + "*********")
-            print("********** best tp: " + str(tp_bst) + "*********")
-            print("********** best rmse: " + str(rmse_bst) + "*********")
     
     weight_adj, beta_adj, group_adj = justify(X,Y,weight_bst,group_bst)
     endtime = datetime.datetime.now()
     time = (endtime - starttime).total_seconds()
 
     print ("Time used:",endtime - starttime)
-    ttt = pd.DataFrame(np.vstack((trmse,tresi,tfp,ttp,tbic,tari)).T,columns = ['rmse','resi','fp','tp','bic','ari'])
-#    ttt = pd.DataFrame(np.vstack((tresi,tfp,ttp,tbic,tari)).T,columns = ['resi','fp','tp','bic','ari'])
-    evalu = pd.DataFrame(np.vstack((ari_bst,rmse_bst,rpe_bst,fp_bst,tp_bst,bic_bst,time)).T,columns = ['ari','rmse','rpe','fp','tp','bic','time'])
+    ttt = pd.DataFrame(np.vstack((tresi,tbic)).T,columns = ['resi','bic'])
+    evalu = pd.DataFrame(np.vstack((rpe_bst,bic_bst,time)).T,columns = ['rpe','bic','time'])
 
     return group_bst, group_adj, beta_bst, beta_adj, weight_bst, weight_adj, center_bst, evalu, ttt
+
+
+
+def swkmeans_app(X, Y, k, lamb, group_init = None):
+    m_features, N_points = X.shape
+    dist = np.zeros((k, N_points))
+    A = np.zeros((k-1,k))
+    for i in range(k-1):
+        A[i,i:(i+2)] = np.array([-1,1])
+    A0 = A.copy()
+    for i in range(N_points-1):        
+        A = np.concatenate((A,A0),axis = 1)
+    M = np.zeros((N_points,N_points*k))
+    for i in range(N_points):
+        M[i,k*i:k*(i+1)] = 1     
+    center = np.zeros(m_features*k).reshape(m_features,k)
+
+    E_k = np.ones(k-1)
+    E_n = np.ones(N_points)
+
+    obj_old = 1e300
+    obj_new = 1e200
+    ite = 0
+## initialization
+    if group_init is None:
+        group_init = np.random.randint(1, k+1,size = N_points)
+    group_set = np.unique(group_init)
+
+    for i in range(k):            
+        X_tmp = X[:,group_init == group_set[i]]
+        Y_tmp = Y[group_init == group_set[i]]
+        reg_tmp = LassoCV(cv=3, max_iter=10000).fit(X_tmp.T,Y_tmp)
+        #reg_tmp = RidgeCV(cv=5).fit(X_tmp.T,Y_tmp)
+        beta_tmp = reg_tmp.coef_
+#        beta0 = np.vstack((np.hstack((np.ones(3),np.zeros(m_features-3))),np.hstack((np.ones(3)*-1,np.zeros(m_features-3))))).T
+#        beta_tmp = beta_init[:,i]
+        dist[i,:] = (Y - beta_tmp.dot(X))**2    #rows: group; columns: distance from center to point i 1 thru N
+    D = np.diag(dist.T.reshape(-1))
+
+## update begins
+    while (obj_old - obj_new)  > 1e-1 or ite<20:
+        #abs((obj_old - obj))  > 1e-5 or /(obj_old*np.sqrt(m_features)))
+        ite += 1
+        
+#
+#        U = cp.Variable(n*k)
+#        obj = cp.Minimize(cp.square(U).T @ D @ E_kn + 0.1 * A @ U @ E_k.T)
+#        constraints = [U<=0.98, M@U-E_n==0]
+#        prob = cp.Problem(obj, constraints)
+#        prob.solve()
+#        weights = (U.value).reshape(N_points,k).T
+
+## update weight       
+        ## calculate gamma
+        tmp = np.linalg.inv(M.dot(np.linalg.inv(D)).dot(M.T))
+        gam = tmp.dot(-2*E_n - M.dot(np.linalg.inv(D)).dot(lamb*A.T.dot(E_k)))
+        ## calculate weight
+        U = -np.linalg.inv(D).dot(lamb*A.T.dot(E_k)+M.T.dot(gam))/2
+        weights = U.reshape(N_points,k).T
+        z = list(set(np.where(weights<0)[1]))
+        weights[weights < 0] = 0
+        weights[:,z] = weights[:,z]/weights[:,z].sum(axis=0)
+
+        if np.min(weights) < 0: #check for underflow
+            print("weight vector small")
+            break
+        for l in range(k):
+            w = np.sqrt(weights[l,:])
+            Yw = w*Y
+            Xw = w*X
+            if ite > np.log(np.sqrt(m_features))/np.log(1.06)*1.5:
+                center[:,l] = LassoCV(cv=5, max_iter=5000,n_alphas = 30).fit(Xw.T,Yw).coef_
+#                center[:,l] = LassoCV(cv=5, max_iter=5000).fit(Xw.T,Yw).coef_
+            else:
+                center[:,l] = LassoCV(cv=5, max_iter=5000,alphas = [0.01]).fit(Xw.T,Yw).coef_
+#                center[:,l] = LassoCV(cv=5, max_iter=5000).fit(Xw.T,Yw).coef_
+        for i in range(k):
+            dist[i,:] = (Y - center[:,i].dot(X))**2    #rows: group; columns: distance from center to point i 1 thru N
+        D = np.diag(dist.T.reshape(-1))
+
+        #dist = np.reshape(np.concatenate(dist, axis=0),(k,N_points))
+        #print(dist.shape)
+        obj_old = obj_new
+        obj_new = (dist*weights**2).sum()
+        #print("obj_old: " + str(obj_old) + "; obj_curr: " + str(obj_new))
+
+    group = np.zeros(N_points)            
+    for point in range(N_points):
+        #dt = dist[:,point].tolist()
+        #group[point] = dt.index(min(dt)) + 1
+        dt = weights[:,point].tolist()
+        group[point] = dt.index(max(dt)) + 1
+
+    group_set = np.unique(group)
+    beta_final = np.zeros((m_features,len(group_set)))
+    for i in range(len(group_set)):
+        X_tmp = X[:,group == group_set[i]]
+        Y_tmp = Y[group == group_set[i]]
+        beta_final[:,i] = SparseLasso(X_tmp.T,Y_tmp)
+#        beta_final[:,i] = pySCAD(X_tmp.T,Y_tmp)
+    print("iteration times:" + str(ite))
+
+    return group, group_init, center, beta_final, weights
 
 
 
@@ -390,15 +342,13 @@ def rep_kmeans2(X, Y, k, rep_time = 10):
     n = X.shape[1]
     tresi = []
     tbic = []
-    tari = []
+    #tari = []
 
     group_rep = []
     starttime = datetime.datetime.now()
     for t in range(rep_time):
-        print("current iteration: " + str(t) + "")
-#        group_p1,group_init, center, beta_final, weight = power_kmeans(X,Y,-1,k)
+        #print("current iteration: " + str(t) + "")
         group_p1,group_init, beta_final = kmeans(X,Y,k) 
-        ari = adjusted_rand_score(group_true, group_p1) 
         group_set = np.unique(group_p1)
         resi2 = np.zeros(n)
         for l in range(len(group_set)):
@@ -406,9 +356,8 @@ def rep_kmeans2(X, Y, k, rep_time = 10):
             Y_tmp = Y[group_p1 == group_set[l]]
             resi2[group_p1==group_set[l]] = (Y_tmp - beta_final[:,l].dot(X_tmp))**2           
         resi_update = resi2.sum()
-        bic_update = criteria_bic(resi_update, beta_final)
+        bic_update = criteria_bic(resi_update, beta_final,n)
         group_rep.append(group_p1)
-        tari.append(ari)
         tresi.append(resi_update)
         tbic.append(bic_update)
 
@@ -416,17 +365,14 @@ def rep_kmeans2(X, Y, k, rep_time = 10):
         if bic_update < bic_bst:
             group_bst = group_p1.copy()
             beta_bst = beta_final.copy()
-            ari_bst = ari
             rpe_bst = np.sqrt(resi_update/n)
             bic_bst = bic_update
-            # print("best ari: " + str(ari_bst) )
-            # print("best bic: " + str(bic_bst) )
-            # print("best resi: " + str(rpe_bst))        
+     
     endtime = datetime.datetime.now()
     time = (endtime - starttime).total_seconds()
-    print ("Time used:",endtime - starttime)
-    evalu = pd.DataFrame(np.vstack((ari_bst,rpe_bst,bic_bst,time)).T,columns = ['ari','rpe','bic','time'])
-    ttt = pd.DataFrame(np.vstack((tresi,tbic,tari)).T,columns = ['resi','bic','ari'])
+    #print ("Time used:",endtime - starttime)
+    evalu = pd.DataFrame(np.vstack((rpe_bst,bic_bst,time)).T,columns = ['rpe','bic','time'])
+    ttt = pd.DataFrame(np.vstack((tresi,tbic)).T,columns = ['resi','bic'])
 
     return group_bst, beta_bst, evalu, ttt, group_rep
 
@@ -445,7 +391,7 @@ def par(X,Y,seq,core=2):
     result = []
     par_sequence = []
     for i in range(seq.shape[0]):
-        print("********current screening:" + str(i))
+        #print("********current screening:" + str(i))
         result.append(multi_pool.apply_async(par_kmeans,(X[seq[i],:],Y)))
         par_sequence.append(seq[i])
     multi_pool.close()
@@ -472,7 +418,7 @@ def par_scr(X,Y,m1 = 5,m2 = 5,core = 2):
     starttime = datetime.datetime.now()
     par_sequence, resi_pool, beta_pool = par(X,Y,seq,core)
     endtime = datetime.datetime.now()
-    print ("Totoal Time used:",endtime - starttime)
+    print ("Time used:",endtime - starttime)
 
     resi_sig = np.hstack((np.array(resi_pool).reshape(-1,1),par_sequence))   
     
@@ -530,7 +476,7 @@ def justify(X,Y,weights,group,beta_final):
         
         est_w = est_er/sum(est_er)
         
-        ind2 = np.delete(np.arange(0,n),ind,axis=0)
+        ind2 = np.delete(np.arange(0,N),ind,axis=0)
         weight_up[:,ind2] = est_w
         group_up = np.zeros(N)
         for i in range(N):
@@ -539,13 +485,13 @@ def justify(X,Y,weights,group,beta_final):
     
 
 
-def criteria_bic(sse, beta_hat):
+def criteria_bic(sse, beta_hat,n):
     beta_sig = np.sign(beta_hat**2).sum()
     bic = n*np.log(sse/n)+0.7*beta_sig*np.log(n)
     return bic
 
 
-def k_bic(sse,k,sig_p):
+def k_bic(sse,k,sig_p,n):
     bic = n*np.log(sse/n)+np.log(n)*(2*k-1+sig_p)
     return bic
 
