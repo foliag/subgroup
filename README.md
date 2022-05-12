@@ -13,7 +13,7 @@ The algorithm starts from an initial estimate of U, and then updates A and U seq
 * Package numpy; panads; math; sklearn.linear_model; sklearn.metrics; scipy; heapq; datetime; multiprocessing
 
 # Contents
-* `src.py`: main function to run our algorithm, see demo below.
+* `source.py`: main function to run our algorithm, see demo below.
 * `utils.py`: code for simulated data generation and results evaluation.
 
 # Demo
