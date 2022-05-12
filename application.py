@@ -23,7 +23,7 @@ import warnings
 import multiprocessing
 warnings.filterwarnings("ignore")
 
-import src
+import source as src
 
 
 ##############CCLE
