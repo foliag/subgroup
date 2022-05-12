@@ -1,6 +1,6 @@
 # Regression-based heterogeneity analysis to identify overlapping subgroup structure in high-dimensional data
 This is a `Python` implementation of the following paper:
-Luo, Z., Yao, X., Sun, Y., Fan, X. (2020). Regression-based heterogeneity analysis to identify overlapping subgroup structure in high-dimensional data.
+Luo, Z., Yao, X., Sun, Y., Fan, X. (2022). Regression-based heterogeneity analysis to identify overlapping subgroup structure in high-dimensional data.
 
 # Introduction
 This algorithm uses an alternating optimization to obtain the partial minimum of the objective function:
