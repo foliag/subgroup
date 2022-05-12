@@ -9,7 +9,7 @@ Created on Tue Aug 25 10:04:50 2020
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import src
+import source as src
 
 
 #data generation
