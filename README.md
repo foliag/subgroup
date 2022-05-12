@@ -19,7 +19,7 @@ The algorithm starts from an initial estimate of U, and then updates A and U seq
 # Demo
 * Generate simulated data under `s1` setting
 ```
-import src
+import source as src
 import utils
 
 p=1000
