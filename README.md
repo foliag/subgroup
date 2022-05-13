@@ -51,7 +51,7 @@ print("%%%%%final estimate begins%%%%%")
 group_est, group_init, center, beta_est, weight_est = ho.swkmeans(X, Y, k, lamb=0, group_init = group_k2)
 weight_up, beta_up, group_up = ho.justify(X,Y,weight_est,group_est,beta_est)
 ```
-* evaluation
+* Evaluation
 ```
 rpe = np.sqrt(ho.sse_calculate_soft(beta_est,weight_est,X,Y)/n)
 rmse = ho.rmse_multi_soft(beta, beta_up, weight_up,n,k,prop,p)
