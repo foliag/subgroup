@@ -39,13 +39,17 @@ Y,X,group_true, err = ho.gen_var_overlap(n,p,prop,k,e,beta)
 ```
 * Implement algorithm through three steps 
 ```
+
+* screening
 print("%%%%%screening begins%%%%%")
 sig_p,time, resi_sig = ho.par_scr(X,Y,m1 = 5, m2 = 5,core = 2)
 
+* inital estimate
 print("%%%%%inital estimate begins%%%%%")
 X_sig = X[sig_p,:]
 group_k2, beta_k, evalu_k, ttt_k, group_rep_k = ho.rep_kmeans2(X_sig, Y, k=2, rep_time = 10)
 
+* final estimate 
 print("%%%%%final estimate begins%%%%%")
 group_est, group_init, center, beta_est, weight_est = ho.swkmeans(X, Y, k, lamb=0, group_init = group_k2)
 weight_up, beta_up, group_up = ho.justify(X,Y,weight_est,group_est,beta_est)
