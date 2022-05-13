@@ -10,7 +10,7 @@ The algorithm starts from an initial estimate of U, and then updates A and U seq
 
 # Requirements
 * Python3
-* Package numpy; panads; math; sklearn.linear_model; sklearn.metrics; scipy; heapq; datetime; multiprocessing
+* Package numpy; panads; sklearn.linear_model; sklearn.metrics; scipy;
 
 # Contents
 * All usable functions:
