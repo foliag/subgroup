@@ -19,10 +19,10 @@ The algorithm starts from an initial estimate of U, and then updates A and U seq
 # Demo
 * Generate simulated data under `s1` setting
 ```
-import source as src
-import utils
+import heteroverlap as ho
 
-p=1000
+
+p=100
 n = 200
 rho=0.5
 e = 0.5
@@ -30,33 +30,30 @@ k=2
 prop = np.array((0.4,0.4,0.2))    #proportion of sample size in each group
 a = np.array([[1,2,3,0,0,0],[0,0,0,-4,-5,-6]])   #non-zero coefficients
 npro = int(n*prop[-1])
-pp_tr = 6  #positive p
-np_tr = p-pp   #negative p
+pp_tr = 6  #total number of non-zero variables
+np_tr = p-pp_tr   #total number of insignificant variables
 
-beta,weight_overlap = gen_beta_overlap(p,a,npro,k)
-Y,X,group_true, err = gen_var_overlap(n,p,rho,prop,k,e)
+beta,weight_overlap = ho.gen_beta_overlap(p,a,npro,k)
+Y,X,group_true, err = ho.gen_var_overlap(n,p,prop,k,e,beta)
+
 
 ```
 * Implement algorithm through three steps 
 ```
-##initial estimate
-core = multiprocessing.cpu_count()
-sig_p, time, resi_sig = src.par_scr(X,Y,m1 = 5, m2 = 5,core = 3)
+print("%%%%%screening begins%%%%%")
+sig_p,time, resi_sig = ho.par_scr(X,Y,m1 = 5, m2 = 5,core = 2)
+
+print("%%%%%inital estimate begins%%%%%")
 X_sig = X[sig_p,:]
-group_k2, beta_k, evalu_k, ttt_k, group_rep_k = src.rep_kmeans2(X_sig, Y, k, rep_time = 5)
+group_k2, beta_k, evalu_k, ttt_k, group_rep_k = ho.rep_kmeans2(X_sig, Y, k=2, rep_time = 10)
 
-##estimate A and U
-group_est, group_init, center, beta_est, weight_est = src.swkmeans(X, Y, k, lamb=0.1, group_init = group_k2)
-
-##final adjustment (optional)
-weight_up, beta_up, group_up = src.justify(X,Y,weight_est,group_est,beta_est)
+print("%%%%%final estimate begins%%%%%")
+group_est, group_init, center, beta_est, weight_est = ho.swkmeans(X, Y, k, lamb=0, group_init = group_k2)
+weight_up, beta_up, group_up = ho.justify(X,Y,weight_est,group_est,beta_est)
 ```
 * evaluation
 ```
-rpe = np.sqrt(sse_calculate(beta_est,weight_est,X,Y)/n)
-ari = adjusted_rand_score(group_true, group_up)         # for s4-s5
-l1loss = l1_loss(group_true,weight_overlap,weight_up)   # for s1-s3
-rmse = rmse_multi(beta, beta_up, weight_up,n)
-fp,tp = confu(pp_tr,beta_up)
+rpe = np.sqrt(ho.sse_calculate_soft(beta_est,weight_est,X,Y)/n)
+rmse = ho.rmse_multi_soft(beta, beta_up, weight_up,n,k,prop,p)
 ```
 
