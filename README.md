@@ -58,5 +58,5 @@ weight_up, beta_up, group_up = ho.justify(X,Y,weight_est,group_est,beta_est)
 ```
 rpe = np.sqrt(ho.sse_calculate_soft(beta_est,weight_est,X,Y)/n)
 rmse = ho.rmse_multi_soft(beta, beta_up, weight_up,n,k,prop,p)
+# users can add more evaluation metrics like ARI and L1 loss. 
 ```
-
