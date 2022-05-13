@@ -13,7 +13,7 @@ The algorithm starts from an initial estimate of U, and then updates A and U seq
 * Package numpy; panads; math; sklearn.linear_model; sklearn.metrics; scipy; heapq; datetime; multiprocessing
 
 # Contents
-* all usable functions:
+* All usable functions:
    `par_scr`, `rep_kmeans2`, `rep_swkmeans`, `kmeans`, `swkmeans`, `swkmeans_app`, `justify`, `bic_run`, `gen_beta_nonoverlap`, `gen_var_nonoverlap`, `gen_beta_overlap`, `gen_var_overlap`, `sse_calculate_hard`, `sse_calculate_soft`, `rmse_multi_hard`, `rmse_multi_soft`
 
 # Demo
