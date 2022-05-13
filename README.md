@@ -21,8 +21,7 @@ The algorithm starts from an initial estimate of U, and then updates A and U seq
 ```
 import heteroverlap as ho
 
-
-p=100
+p=100   #scaled variable dimension to 100
 n = 200
 rho=0.5
 e = 0.5
